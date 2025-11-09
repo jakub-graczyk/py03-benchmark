@@ -9,4 +9,6 @@ name = "py03_benchmark"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = "0.25.0"
+futures = "0.3.31"
+pyo3 = { version = "0.25.1", features = ["extension-module", "experimental-async"] }
+tokio = { version = "1.48.0", features = ["full"] }

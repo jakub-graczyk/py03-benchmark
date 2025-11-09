@@ -6,6 +6,7 @@ dist/
 wheels/
 *.egg-info
 target/
+*.so
 
 # Virtual environments
 .venv
