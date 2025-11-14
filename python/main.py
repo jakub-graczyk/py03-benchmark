@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -13,60 +14,55 @@ from lib import (
 from py03_benchmark.py03_benchmark import (
     async_collection_add,
     async_collection_tokio_add,
+    async_runtimes_add,
     sum_as_string,
 )
 
 
-async def async_rust(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
+async def async_rust(calls: int, size: int, l: list[tuple[int, int]]):
     for i in range(calls):
         results = await async_collection_add(l)
     return
 
 
-async def async_python(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
+async def async_python(calls: int, size: int, l: list[tuple[int, int]]):
     for i in range(calls):
         results = await async_collection_add_python(l)
     return
 
 
-async def tokio_rust(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
+async def tokio_rust(calls: int, size: int, l: list[tuple[int, int]]):
     for i in range(calls):
         results = await async_collection_tokio_add(l)
     return
 
 
-async def tokio_python(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
+async def tokio_python(calls: int, size: int, l: list[tuple[int, int]]):
     for i in range(calls):
         results = await async_collection_tokio_add_python(l)
     return
 
 
-async def measure(calls: int, size: int, rust_function, python_function, type: str):
+async def async_runtimes(calls: int, size: int, l: list[tuple[int, int]]):
+    for i in range(calls):
+        results = await async_runtimes_add(l)
+    return
+
+
+async def measure(calls: int, size: int, function, type: str, lang: str):
+    l = [(i, i + 1) for i in range(size)]
     start = time.perf_counter()
-    _ = await rust_function(calls, size)
-    rust_time = time.perf_counter() - start
+    _ = await function(calls, size, l)
+    execute_time = time.perf_counter() - start
 
     print(
-        f"{type} Rust with {calls} calls and list size {size} took {rust_time:.6f} seconds"
-    )
-
-    start = time.perf_counter()
-    _ = await python_function(calls, size)
-    python_time = time.perf_counter() - start
-
-    print(
-        f"{type} Python with {calls} calls and list size {size} took {python_time:.6f} seconds"
+        f"{type} {lang} with {calls} calls and list size {size} took {execute_time:.6f} seconds"
     )
 
     return {
         "calls": calls,
         "size": size,
-        "rust_time": rust_time,
-        "python_time": python_time,
+        "time": execute_time,
         "type": type,
     }
 
@@ -81,12 +77,17 @@ def create_graphs(results, output_dir="graphs"):
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # Separate results by type (Async vs Tokio)
+    # Separate results by type (Async vs Tokio vs Async Runtimes)
     async_results = [r for r in results if r["type"] == "Async"]
     tokio_results = [r for r in results if r["type"] == "Tokio"]
+    async_runtimes_results = [r for r in results if r["type"] == "Async Runtimes Tokio"]
 
     # Generate graphs for each configuration
-    for result_set, label in [(async_results, "Async"), (tokio_results, "Tokio")]:
+    for result_set, label in [
+        (async_results, "Async"),
+        (tokio_results, "Tokio"),
+        (async_runtimes_results, "Async Runtimes Tokio"),
+    ]:
         if not result_set:
             continue
 
@@ -126,7 +127,9 @@ def create_graphs(results, output_dir="graphs"):
                 width=800,
             )
 
-            filename = f"{output_dir}/{label.lower()}_calls{calls}_size{size}.html"
+            # Create safe filename
+            safe_label = label.lower().replace(" ", "_")
+            filename = f"{output_dir}/{safe_label}_calls{calls}_size{size}.html"
             fig.write_html(filename)
             print(f"Saved graph: {filename}")
 
@@ -154,14 +157,16 @@ def create_graphs(results, output_dir="graphs"):
                 width=800,
             )
 
-            filename = (
-                f"{output_dir}/{label.lower()}_speedup_calls{calls}_size{size}.html"
-            )
+            filename = f"{output_dir}/{safe_label}_speedup_calls{calls}_size{size}.html"
             fig2.write_html(filename)
             print(f"Saved graph: {filename}")
 
     # Create overview comparison graphs for each type
-    for result_set, label in [(async_results, "Async"), (tokio_results, "Tokio")]:
+    for result_set, label in [
+        (async_results, "Async"),
+        (tokio_results, "Tokio"),
+        (async_runtimes_results, "Async Runtimes Tokio"),
+    ]:
         if not result_set:
             continue
 
@@ -191,7 +196,9 @@ def create_graphs(results, output_dir="graphs"):
             width=1000,
         )
 
-        filename = f"{output_dir}/{label.lower()}_overview.html"
+        # Create safe filename
+        safe_label = label.lower().replace(" ", "_")
+        filename = f"{output_dir}/{safe_label}_overview.html"
         fig.write_html(filename)
         print(f"Saved graph: {filename}")
 
@@ -222,9 +229,163 @@ def create_graphs(results, output_dir="graphs"):
             width=1000,
         )
 
-        filename = f"{output_dir}/{label.lower()}_speedup_overview.html"
+        filename = f"{output_dir}/{safe_label}_speedup_overview.html"
         fig.write_html(filename)
         print(f"Saved graph: {filename}")
+
+    # Create Tokio comparison graphs (Async Runtimes vs Classic Tokio)
+    if tokio_results and async_runtimes_results:
+        print("\nGenerating Tokio implementation comparison graphs...")
+
+        # Match results by calls and size
+        matched_pairs = []
+        for tokio_result in tokio_results:
+            for arr_result in async_runtimes_results:
+                if (
+                    tokio_result["calls"] == arr_result["calls"]
+                    and tokio_result["size"] == arr_result["size"]
+                ):
+                    matched_pairs.append(
+                        {
+                            "calls": tokio_result["calls"],
+                            "size": tokio_result["size"],
+                            "tokio_time": tokio_result["rust_time"],
+                            "async_runtimes_time": arr_result["rust_time"],
+                            "python_time": tokio_result["python_time"],
+                        }
+                    )
+                    break
+
+        # Individual comparison graphs
+        for pair in matched_pairs:
+            calls = pair["calls"]
+            size = pair["size"]
+            tokio_time = pair["tokio_time"]
+            arr_time = pair["async_runtimes_time"]
+            python_time = pair["python_time"]
+
+            # Three-way comparison
+            fig = go.Figure(
+                data=[
+                    go.Bar(
+                        name="Tokio",
+                        x=["Implementation"],
+                        y=[tokio_time],
+                        marker_color="#CE422B",
+                    ),
+                    go.Bar(
+                        name="Async Runtimes",
+                        x=["Implementation"],
+                        y=[arr_time],
+                        marker_color="#FF6B35",
+                    ),
+                    go.Bar(
+                        name="Python",
+                        x=["Implementation"],
+                        y=[python_time],
+                        marker_color="#3776AB",
+                    ),
+                ]
+            )
+
+            fig.update_layout(
+                title=f"Tokio Implementation Comparison<br><sub>{calls:,} calls × {size:,} list size</sub>",
+                yaxis_title="Time (seconds)",
+                xaxis_title="",
+                barmode="group",
+                template="plotly_white",
+                showlegend=True,
+                height=500,
+                width=800,
+            )
+
+            filename = f"{output_dir}/tokio_comparison_calls{calls}_size{size}.html"
+            fig.write_html(filename)
+            print(f"Saved graph: {filename}")
+
+            # Relative performance (which Tokio is faster)
+            ratio = tokio_time / arr_time if arr_time > 0 else 0
+            faster_impl = "Async Runtimes" if ratio > 1 else "Classic Tokio"
+            speedup_factor = max(ratio, 1 / ratio) if ratio > 0 else 0
+
+            fig2 = go.Figure(
+                data=[
+                    go.Bar(
+                        name="Classic Tokio",
+                        x=["Classic Tokio"],
+                        y=[tokio_time],
+                        marker_color="#CE422B",
+                        text=[f"{tokio_time:.6f}s"],
+                        textposition="auto",
+                    ),
+                    go.Bar(
+                        name="Async Runtimes",
+                        x=["Async Runtimes"],
+                        y=[arr_time],
+                        marker_color="#FF6B35",
+                        text=[f"{arr_time:.6f}s"],
+                        textposition="auto",
+                    ),
+                ]
+            )
+
+            fig2.update_layout(
+                title=f"Tokio Implementations Side-by-Side<br><sub>{calls:,} calls × {size:,} list size | {faster_impl} is {speedup_factor:.2f}x faster</sub>",
+                yaxis_title="Time (seconds)",
+                xaxis_title="Implementation",
+                template="plotly_white",
+                showlegend=False,
+                height=500,
+                width=800,
+            )
+
+            filename = f"{output_dir}/tokio_sidebyside_calls{calls}_size{size}.html"
+            fig2.write_html(filename)
+            print(f"Saved graph: {filename}")
+
+        # Overview comparison if we have multiple configurations
+        if len(matched_pairs) > 0:
+            labels_list = [f"{p['calls']:,} × {p['size']:,}" for p in matched_pairs]
+            tokio_times = [p["tokio_time"] for p in matched_pairs]
+            arr_times = [p["async_runtimes_time"] for p in matched_pairs]
+            python_times = [p["python_time"] for p in matched_pairs]
+
+            fig = go.Figure(
+                data=[
+                    go.Bar(
+                        name="Classic Tokio",
+                        x=labels_list,
+                        y=tokio_times,
+                        marker_color="#CE422B",
+                    ),
+                    go.Bar(
+                        name="Async Runtimes",
+                        x=labels_list,
+                        y=arr_times,
+                        marker_color="#FF6B35",
+                    ),
+                    go.Bar(
+                        name="Python",
+                        x=labels_list,
+                        y=python_times,
+                        marker_color="#3776AB",
+                    ),
+                ]
+            )
+
+            fig.update_layout(
+                title="Tokio Implementation Comparison Overview",
+                xaxis_title="Calls × List Size",
+                yaxis_title="Time (seconds)",
+                barmode="group",
+                template="plotly_white",
+                height=600,
+                width=1000,
+            )
+
+            filename = f"{output_dir}/tokio_comparison_overview.html"
+            fig.write_html(filename)
+            print(f"Saved graph: {filename}")
 
 
 # END GENAI
@@ -242,7 +403,15 @@ async def main():
     results = []
 
     for calls, size in call_size_list_async:
-        result = await measure(calls, size, async_rust, async_python, "Async")
+        result1 = await measure(calls, size, async_rust, "Async", "Rust")
+        result2 = await measure(calls, size, async_python, "Async", "Python")
+        result = {
+            "calls": calls,
+            "size": size,
+            "rust_time": result1["time"],
+            "python_time": result2["time"],
+            "type": result1["type"],
+        }
         results.append(result)
 
     call_size_list_tokio = [
@@ -252,8 +421,26 @@ async def main():
     ]
 
     for calls, size in call_size_list_tokio:
-        result = await measure(calls, size, tokio_rust, tokio_python, "Tokio")
-        results.append(result)
+        arr = await measure(calls, size, async_runtimes, "Async Runtimes Tokio", "Rust")
+        tr = await measure(calls, size, tokio_rust, "Tokio", "Rust")
+        tp = await measure(calls, size, tokio_python, "Tokio", "Python")
+        result1 = {
+            "calls": calls,
+            "size": size,
+            "rust_time": tr["time"],
+            "python_time": tp["time"],
+            "type": tr["type"],
+        }
+        result2 = {
+            "calls": calls,
+            "size": size,
+            "rust_time": arr["time"],
+            "python_time": tp["time"],
+            "type": arr["type"],
+        }
+
+        results.append(result1)
+        results.append(result2)
 
     print("Creating graphs to graph/")
     create_graphs(results)

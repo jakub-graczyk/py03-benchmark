@@ -5,6 +5,7 @@ from ._rust.py03_benchmark import (
     MethodsOnlyClass,
     async_collection_add,
     async_collection_tokio_add,
+    async_runtimes_add,
     make_bench_class,
     make_empty_class,
     make_fields_only_class,
