@@ -174,36 +174,118 @@ fn many_small_args(args: &Bound<'_, PyTuple>) -> PyResult<i64> {
         let v: i64 = item.extract()?;
         sum += v;
     }
-    
+
     Ok(sum)
 }
 
 /// CAUTION: I wasn't able to make this function work with variable arguments,
 /// so we have to explicitly define 50 arguments here.
-/// 
+///
 /// Explicit: many small integer arguments.
 /// Python will call: many_small_args_explicitly(1, 2, 3, ..., N)
 #[pyfunction]
-fn many_small_args_explicitly(arg0: i64, arg1: i64, arg2: i64, arg3: i64, arg4: i64,
-                             arg5: i64, arg6: i64, arg7: i64, arg8: i64, arg9: i64,
-                             arg10: i64, arg11: i64, arg12: i64, arg13: i64, arg14: i64,
-                             arg15: i64, arg16: i64, arg17: i64, arg18: i64, arg19: i64,
-                             arg20: i64, arg21: i64, arg22: i64, arg23: i64, arg24: i64,
-                             arg25: i64, arg26: i64, arg27: i64, arg28: i64, arg29: i64,
-                             arg30: i64, arg31: i64, arg32: i64, arg33: i64, arg34: i64,
-                             arg35: i64, arg36: i64, arg37: i64, arg38: i64, arg39: i64,
-                             arg40: i64, arg41: i64, arg42: i64, arg43: i64, arg44: i64,
-                             arg45: i64, arg46: i64, arg47: i64, arg48: i64, arg49: i64) -> PyResult<i64> {
-    Ok(arg0 + arg1 + arg2 + arg3 + arg4 +
-       arg5 + arg6 + arg7 + arg8 + arg9 +
-       arg10 + arg11 + arg12 + arg13 + arg14 +
-       arg15 + arg16 + arg17 + arg18 + arg19 +
-       arg20 + arg21 + arg22 + arg23 +arg24 +
-      arg25 + arg26 + arg27 + arg28 +arg29 +
-      arg30 + arg31 + arg32 + arg33 +arg34 +
-      arg35 + arg36 + arg37 + arg38 +arg39 +
-      arg40 + arg41 + arg42 + arg43 +arg44 +
-      arg45 + arg46 + arg47 + arg48 +arg49)
+fn many_small_args_explicitly(
+    arg0: i64,
+    arg1: i64,
+    arg2: i64,
+    arg3: i64,
+    arg4: i64,
+    arg5: i64,
+    arg6: i64,
+    arg7: i64,
+    arg8: i64,
+    arg9: i64,
+    arg10: i64,
+    arg11: i64,
+    arg12: i64,
+    arg13: i64,
+    arg14: i64,
+    arg15: i64,
+    arg16: i64,
+    arg17: i64,
+    arg18: i64,
+    arg19: i64,
+    arg20: i64,
+    arg21: i64,
+    arg22: i64,
+    arg23: i64,
+    arg24: i64,
+    arg25: i64,
+    arg26: i64,
+    arg27: i64,
+    arg28: i64,
+    arg29: i64,
+    arg30: i64,
+    arg31: i64,
+    arg32: i64,
+    arg33: i64,
+    arg34: i64,
+    arg35: i64,
+    arg36: i64,
+    arg37: i64,
+    arg38: i64,
+    arg39: i64,
+    arg40: i64,
+    arg41: i64,
+    arg42: i64,
+    arg43: i64,
+    arg44: i64,
+    arg45: i64,
+    arg46: i64,
+    arg47: i64,
+    arg48: i64,
+    arg49: i64,
+) -> PyResult<i64> {
+    Ok(arg0
+        + arg1
+        + arg2
+        + arg3
+        + arg4
+        + arg5
+        + arg6
+        + arg7
+        + arg8
+        + arg9
+        + arg10
+        + arg11
+        + arg12
+        + arg13
+        + arg14
+        + arg15
+        + arg16
+        + arg17
+        + arg18
+        + arg19
+        + arg20
+        + arg21
+        + arg22
+        + arg23
+        + arg24
+        + arg25
+        + arg26
+        + arg27
+        + arg28
+        + arg29
+        + arg30
+        + arg31
+        + arg32
+        + arg33
+        + arg34
+        + arg35
+        + arg36
+        + arg37
+        + arg38
+        + arg39
+        + arg40
+        + arg41
+        + arg42
+        + arg43
+        + arg44
+        + arg45
+        + arg46
+        + arg47
+        + arg48
+        + arg49)
 }
 
 #[pyclass]
@@ -268,11 +350,21 @@ impl MethodsOnlyClass {
         MethodsOnlyClass
     }
 
-    fn method_0(&self) -> i64 { 1 }
-    fn method_1(&self) -> i64 { 2 }
-    fn method_2(&self) -> i64 { 3 }
-    fn method_3(&self) -> i64 { 4 }
-    fn method_4(&self) -> i64 { 5 }
+    fn method_0(&self) -> i64 {
+        1
+    }
+    fn method_1(&self) -> i64 {
+        2
+    }
+    fn method_2(&self) -> i64 {
+        3
+    }
+    fn method_3(&self) -> i64 {
+        4
+    }
+    fn method_4(&self) -> i64 {
+        5
+    }
 }
 
 /// Create and return a MethodsOnlyClass instance.
@@ -287,7 +379,7 @@ fn py03_benchmark(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Asynchronous functions
     m.add_function(wrap_pyfunction!(async_collection_add, m)?)?;
     m.add_function(wrap_pyfunction!(async_collection_tokio_add, m)?)?;
-    
+
     // Synchronous functions
     m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
     m.add_function(wrap_pyfunction!(sync_empty, m)?)?;
@@ -298,7 +390,7 @@ fn py03_benchmark(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<BenchClass>()?;
     m.add_function(wrap_pyfunction!(make_bench_class, m)?)?;
     m.add_function(wrap_pyfunction!(read_class_fields, m)?)?;
-    
+
     // Follow-up benchmark functions
     m.add_function(wrap_pyfunction!(many_small_args, m)?)?;
     m.add_function(wrap_pyfunction!(many_small_args_explicitly, m)?)?;
@@ -308,6 +400,6 @@ fn py03_benchmark(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(make_empty_class, m)?)?;
     m.add_function(wrap_pyfunction!(make_fields_only_class, m)?)?;
     m.add_function(wrap_pyfunction!(make_methods_only_class, m)?)?;
-    
+
     Ok(())
 }

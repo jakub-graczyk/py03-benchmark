@@ -1,33 +1,52 @@
 import time
 
-from .lib import (
-    sum_as_string_python,
-    sync_empty_python,
-    sync_large_args_python,
-    sync_return_large_python,
-    sync_large_args_rust,
-    PythonBenchClass,
-    make_python_bench_class,
-    read_class_fields_python,
-    many_small_args_python,
-    many_small_args_explicitly_python,
-    make_python_empty_class,
-    PythonFieldsOnlyClass,
-    make_python_fields_only_class,
-    PythonMethodsOnlyClass,
-    make_python_methods_only_class,
+from py03_benchmark.py03_benchmark import (
+    make_bench_class as make_rust_bench_class,
+)
+from py03_benchmark.py03_benchmark import (
+    make_empty_class as make_rust_empty_class,
+)
+from py03_benchmark.py03_benchmark import (
+    make_fields_only_class as make_rust_fields_only_class,
+)
+from py03_benchmark.py03_benchmark import (
+    make_methods_only_class as make_rust_methods_only_class,
+)
+from py03_benchmark.py03_benchmark import (
+    many_small_args as many_small_args_rust,
+)
+from py03_benchmark.py03_benchmark import (
+    many_small_args_explicitly as many_small_args_explicitly_rust,
+)
+from py03_benchmark.py03_benchmark import (
+    read_class_fields as read_class_fields_rust,
 )
 from py03_benchmark.py03_benchmark import (
     sum_as_string as sum_as_string_rust,
+)
+from py03_benchmark.py03_benchmark import (
     sync_empty as sync_empty_rust,
+)
+from py03_benchmark.py03_benchmark import (
     sync_return_large as sync_return_large_rust,
-    make_bench_class as make_rust_bench_class,
-    read_class_fields as read_class_fields_rust,
-    many_small_args as many_small_args_rust,
-    many_small_args_explicitly as many_small_args_explicitly_rust,
-    make_empty_class as make_rust_empty_class,
-    make_fields_only_class as make_rust_fields_only_class,
-    make_methods_only_class as make_rust_methods_only_class,
+)
+
+from .lib import (
+    PythonBenchClass,
+    PythonFieldsOnlyClass,
+    PythonMethodsOnlyClass,
+    make_python_bench_class,
+    make_python_empty_class,
+    make_python_fields_only_class,
+    make_python_methods_only_class,
+    many_small_args_explicitly_python,
+    many_small_args_python,
+    read_class_fields_python,
+    sum_as_string_python,
+    sync_empty_python,
+    sync_large_args_python,
+    sync_large_args_rust,
+    sync_return_large_python,
 )
 
 
@@ -72,21 +91,24 @@ def bench_sync_return_large():
     bench(py, "sync_return_large_python")
     bench(rs, "sync_return_large_rust")
 
+
 def bench_bench_class():
     bench(make_python_bench_class, "make_python_bench_class")
     bench(make_rust_bench_class, "make_rust_bench_class")
+
 
 def bench_read_bench_class_fields():
     obj = PythonBenchClass()
 
     def py():
         read_class_fields_python(obj)
-    
+
     def rs():
         read_class_fields_rust(obj)
 
     bench(py, "read_class_fields_python(BenchClass)")
     bench(rs, "read_class_fields_rust(BenchClass)")
+
 
 def bench_many_small_args():
     # 50 small ints
@@ -100,6 +122,7 @@ def bench_many_small_args():
 
     bench(py, "many_small_args_python")
     bench(rs, "many_small_args_rust")
+
 
 def bench_many_small_args_explicitly():
     # 50 small ints
@@ -118,6 +141,7 @@ def bench_many_small_args_explicitly():
     bench(py_explicitly, "many_small_args_explicitly_python")
     bench(rs, "many_small_args_explicitly_rust")
 
+
 def bench_make_class_empty():
     bench(make_python_empty_class, "make_python_empty_class")
     bench(make_rust_empty_class, "make_rust_empty_class")
@@ -131,6 +155,7 @@ def bench_make_class_fields_only():
 def bench_make_class_methods_only():
     bench(make_python_methods_only_class, "make_python_methods_only_class")
     bench(make_rust_methods_only_class, "make_rust_methods_only_class")
+
 
 def bench_methods_only_calls():
     py_obj = PythonMethodsOnlyClass()
@@ -157,6 +182,7 @@ def bench_methods_only_calls():
 
     bench(py, "methods_only_calls_python")
     bench(rs, "methods_only_calls_rust")
+
 
 def bench_read_fields_only_class_fields():
     obj = PythonFieldsOnlyClass()
@@ -186,6 +212,7 @@ def main():
     bench_make_class_methods_only()
     bench_methods_only_calls()
     bench_read_fields_only_class_fields()
+
 
 if __name__ == "__main__":
     main()

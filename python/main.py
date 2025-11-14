@@ -70,6 +70,7 @@ async def measure(calls: int, size: int, rust_function, python_function, type: s
         "type": type,
     }
 
+
 # START GENAI
 def create_graphs(results, output_dir="graphs"):
     """Generate Plotly graphs from benchmark results"""
@@ -224,7 +225,10 @@ def create_graphs(results, output_dir="graphs"):
         filename = f"{output_dir}/{label.lower()}_speedup_overview.html"
         fig.write_html(filename)
         print(f"Saved graph: {filename}")
+
+
 # END GENAI
+
 
 async def main():
     print("py03-benchmark")
@@ -253,6 +257,7 @@ async def main():
 
     print("Creating graphs to graph/")
     create_graphs(results)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
