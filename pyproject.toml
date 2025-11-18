@@ -11,6 +11,12 @@ dependencies = [
     "asyncio>=4.0.0",
     "numpy>=1.24.4",
     "plotly>=6.4.0",
+    "ruff>=0.14.5",
+    "scylla_python_serialization @ git+https://github.com/jakub-graczyk/python-rs-driver@benchmarks-python-typed",
+    "scylla_rust_python_serialization @ git+https://github.com/patrycja-ziemkiewicz/python-rs-driver@benchmark",
+    "scylla_rust_serialization @ git+https://github.com/paulinaczajkowska/python-rs-driver@benchmark"
+
+
 ]
 
 [build-system]
