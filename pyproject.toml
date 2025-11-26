@@ -33,4 +33,4 @@ cache-keys = [
     { file = "python/*.py"},
     { file = "python/*.pyi"},
 ]
-config-settings = { build-args = '--profile=dev' }
+config-settings = { build-args = '--profile=release' }

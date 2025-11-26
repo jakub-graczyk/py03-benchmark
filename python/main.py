@@ -9,43 +9,43 @@ import plotly.graph_objects as go
 from lib import (
     async_collection_add_python,
     async_collection_tokio_add_python,
-    sum_as_string_python,
 )
 from py03_benchmark.py03_benchmark import (
     async_collection_add,
     async_collection_tokio_add,
     async_runtimes_add,
-    sum_as_string,
 )
 
 
 async def async_rust(calls: int, size: int, l: list[tuple[int, int]]):
-    for i in range(calls):
-        results = await async_collection_add(l)
+    tasks = [asyncio.create_task(async_collection_add(l)) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
 async def async_python(calls: int, size: int, l: list[tuple[int, int]]):
-    for i in range(calls):
-        results = await async_collection_add_python(l)
+    tasks = [asyncio.create_task(async_collection_add_python(l)) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
 async def tokio_rust(calls: int, size: int, l: list[tuple[int, int]]):
-    for i in range(calls):
-        results = await async_collection_tokio_add(l)
+    tasks = [asyncio.create_task(async_collection_tokio_add(l)) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
 async def tokio_python(calls: int, size: int, l: list[tuple[int, int]]):
-    for i in range(calls):
-        results = await async_collection_tokio_add_python(l)
+    tasks = [
+        asyncio.create_task(async_collection_tokio_add_python(l)) for c in range(calls)
+    ]
+    _ = await asyncio.gather(*tasks)
     return
 
 
 async def async_runtimes(calls: int, size: int, l: list[tuple[int, int]]):
-    for i in range(calls):
-        results = await async_runtimes_add(l)
+    tasks = [async_runtimes_add(l) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
@@ -394,36 +394,22 @@ def create_graphs(results, output_dir="graphs"):
 async def main():
     print("py03-benchmark")
 
-    call_size_list_async = [
-        (4000000, 1),
-        (2500, 10000),
-        (10, 2000000),
-    ]
-
     results = []
 
-    for calls, size in call_size_list_async:
-        result1 = await measure(calls, size, async_rust, "Async", "Rust")
-        result2 = await measure(calls, size, async_python, "Async", "Python")
-        result = {
-            "calls": calls,
-            "size": size,
-            "rust_time": result1["time"],
-            "python_time": result2["time"],
-            "type": result1["type"],
-        }
-        results.append(result)
-
-    call_size_list_tokio = [
-        (1500000, 1),
-        (2500, 3000),
-        (5, 2000000),
+    call_size_list = [
+        (150000, 1),
+        (250, 300),
+        (5, 20000),
     ]
 
-    for calls, size in call_size_list_tokio:
-        arr = await measure(calls, size, async_runtimes, "Async Runtimes Tokio", "Rust")
-        tr = await measure(calls, size, tokio_rust, "Tokio", "Rust")
-        tp = await measure(calls, size, tokio_python, "Tokio", "Python")
+    print("Tokio\n")
+    print("For flamegraph leave function you want to measure and adjust call_size_list")
+    for calls, size in call_size_list:
+        arr = await measure(
+            calls, size, async_runtimes, "Tokio with Async Runtimes", "Rust"
+        )
+        tr = await measure(calls, size, tokio_rust, "Tokio with PyO3", "Rust")
+        tp = await measure(calls, size, tokio_python, "Asyncio", "Python")
         result1 = {
             "calls": calls,
             "size": size,
@@ -441,9 +427,11 @@ async def main():
 
         results.append(result1)
         results.append(result2)
+        print("\n")
 
-    print("Creating graphs to graph/")
-    create_graphs(results)
+    # Uncomment for graphs
+    # print("Creating graphs to graph/")
+    # create_graphs(results)
 
 
 if __name__ == "__main__":

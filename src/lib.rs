@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyTuple};
 use pyo3_async_runtimes;
 use std::sync::LazyLock;
+use std::time::Duration;
 use tokio::runtime::Runtime;
 
 pub static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| Runtime::new().unwrap());
@@ -23,7 +24,7 @@ async fn async_collection_tokio_add(list: Vec<(i32, i32)>) {
     r.await.unwrap();
 }
 
-/// Asynchronous: sum pairs of integers in parallel using futures::join_all.
+// Not using this one with sleep
 #[pyfunction]
 async fn async_collection_add(list: Vec<(i32, i32)>) {
     let mut res = Vec::new();
@@ -34,7 +35,9 @@ async fn async_collection_add(list: Vec<(i32, i32)>) {
     let _results = future::join_all(res).await;
 }
 
-async fn async_add(_a: i32, _b: i32) {}
+async fn async_add(_a: i32, _b: i32) {
+    tokio::time::sleep(Duration::from_secs(1)).await;
+}
 
 #[pyfunction]
 fn async_runtimes_add(py: Python, list: Vec<(i32, i32)>) -> PyResult<Bound<PyAny>> {

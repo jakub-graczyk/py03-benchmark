@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from py03_benchmark.py03_benchmark import (  # Rust module
     sync_large_args as sync_large_args_rust_helper,
@@ -280,6 +281,7 @@ async def async_collection_tokio_add_python(list: list[tuple[int, int]]) -> None
         results.append(result)
 
 
+# Not relevant
 async def async_collection_add_python(list: list[tuple[int, int]]) -> None:
     res = []
     for a, b in list:
@@ -289,4 +291,5 @@ async def async_collection_add_python(list: list[tuple[int, int]]) -> None:
 
 
 async def async_add(a: int, b: int) -> None:
+    await asyncio.sleep(1)
     pass
