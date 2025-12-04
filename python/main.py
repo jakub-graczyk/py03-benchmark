@@ -1,99 +1,71 @@
 import asyncio
-import os
+import statistics
 import time
-from pathlib import Path
 
-import plotly.express as px
-import plotly.graph_objects as go
-from lib import (
-    async_collection_add_python,
-    async_collection_tokio_add_python,
-    sum_as_string_python,
-)
+from lib import python_asyncio
 from py03_benchmark.py03_benchmark import (
-    async_collection_add,
-    async_collection_tokio_add,
-    sum_as_string,
+    rust_tokio_with_async_runtimes,
+    rust_tokio_with_pyo3,
 )
 
 
-async def async_rust(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
-    for i in range(calls):
-        results = await async_collection_add(l)
+async def call_rust_tokio_with_pyo3(calls: int, l: list[tuple[int, int]]):
+    tasks = [asyncio.create_task(rust_tokio_with_pyo3(l)) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
-async def async_python(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
-    for i in range(calls):
-        results = await async_collection_add_python(l)
+async def call_python_asyncio(calls: int, l: list[tuple[int, int]]):
+    tasks = [asyncio.create_task(python_asyncio(l)) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
-async def tokio_rust(calls: int, size: int):
-    l = [(i, i + 1) for i in range(size)]
-    for i in range(calls):
-        results = await async_collection_tokio_add(l)
+async def call_rust_tokio_with_async_runtimes(calls: int, l: list[tuple[int, int]]):
+    tasks = [rust_tokio_with_async_runtimes(l) for c in range(calls)]
+    _ = await asyncio.gather(*tasks)
     return
 
 
-async def tokio_python(calls: int, size: int):
+async def measure(calls: int, size: int, function, type: str, lang: str):
+    times = []
+
     l = [(i, i + 1) for i in range(size)]
-    for i in range(calls):
-        results = await async_collection_tokio_add_python(l)
-    return
+    for _ in range(10):
+        start = time.perf_counter()
+        _ = await function(calls, l)
+        times.append(time.perf_counter() - start)
 
-
-async def measure(calls: int, size: int, rust_function, python_function, type: str):
-    start = time.perf_counter()
-    _ = await rust_function(calls, size)
-    rust_time = time.perf_counter() - start
+    mean_t = statistics.mean(times)
+    std_t = statistics.stdev(times)
 
     print(
-        f"{type} Rust with {calls} calls and list size {size} took {rust_time:.6f} seconds"
+        f"{type} {lang} with {calls} calls and list size {size}: "
+        f"mean={mean_t:.6f}s, std={std_t:.6f}s"
     )
 
-    start = time.perf_counter()
-    _ = await python_function(calls, size)
-    python_time = time.perf_counter() - start
-
-    print(
-        f"{type} Python with {calls} calls and list size {size} took {python_time:.6f} seconds"
-    )
-
-    return {
-        "calls": calls,
-        "size": size,
-        "rust_time": rust_time,
-        "python_time": python_time,
-        "type": type,
-    }
 
 async def main():
     print("py03-benchmark")
 
-    call_size_list_async = [
-        (4000000, 1),
-        (2500, 10000),
-        (10, 2000000),
+    call_size_list = [
+        (150000, 8),
+        (2500, 1000),
+        (5, 200000),
     ]
 
-    results = []
+    print("Benchmark\n")
 
-    for calls, size in call_size_list_async:
-        result = await measure(calls, size, async_rust, async_python, "Async")
-        results.append(result)
-
-    call_size_list_tokio = [
-        (1500000, 1),
-        (2500, 3000),
-        (5, 2000000),
-    ]
-
-    for calls, size in call_size_list_tokio:
-        result = await measure(calls, size, tokio_rust, tokio_python, "Tokio")
-        results.append(result)
+    for calls, size in call_size_list:
+        await measure(
+            calls,
+            size,
+            call_rust_tokio_with_async_runtimes,
+            "Tokio with Async Runtimes",
+            "Rust",
+        )
+        await measure(calls, size, call_rust_tokio_with_pyo3, "Tokio with PyO3", "Rust")
+        await measure(calls, size, call_python_asyncio, "Asyncio", "Python")
 
 
 if __name__ == "__main__":
