@@ -1,3 +1,4 @@
+import statistics
 import time
 import asyncio
 from typing import Any
@@ -395,7 +396,7 @@ def benchmark(
         f"[Rust] Single serialization of type={test_type} (size={size}) took {time_rust:.6f}s"
     )
 
-    return time_py
+    return [time_rust_py, time_py, time_rust]
 
 
 async def run_benchmark_case(
@@ -403,36 +404,74 @@ async def run_benchmark_case(
     prepared: PreparedStatements,
     typ: str,
     scenarios,
+    repeats: int = 5,
 ):
     results = []
 
     print("\n--------------" + typ + "---------------")
     for i, (calls, size) in enumerate(scenarios):
+
+        rust_py_times = []
+        py_times = []
+        rust_times = []
         values, values_vl = create_values(i, size)
-        print(f"\n--- Benchmark: calls={calls}, size={size} ---")
-        res = benchmark(calls, values, values_vl, size, prepared, typ)
-        results.append(res)
-        compare_serializations(values, values_vl, prepared)
+        for r in range(repeats):
+            print(f"\n--- Benchmark: calls={calls}, size={size} ---")
+            res = benchmark(calls, values, values_vl, size, prepared, typ)
+            results.append(res)
+            # compare_serializations(values, values_vl, prepared)
+
+            rust_py_times.append(res[0])
+            py_times.append(res[1])
+            rust_times.append(res[2])
+
+        result_stats = {
+            "calls": calls,
+            "size": size,
+            "rust_python": {
+                "mean": statistics.mean(rust_py_times),
+                "std": statistics.stdev(rust_py_times),
+            },
+            "python": {
+                "mean": statistics.mean(py_times),
+                "std": statistics.stdev(py_times),
+            },
+            "rust": {
+                "mean": statistics.mean(rust_times),
+                "std": statistics.stdev(rust_times),
+            },
+        }
+
+        print("\nResult summary:")
+        print(result_stats)
+
+        results.append(result_stats)
+
+    return results
 
 
 async def run_benchmarks_single_schema(
     create_values, create_scheme, typ, scenarios, sessions
 ):
     prepared = await create_scheme(sessions)
-    await run_benchmark_case(create_values, prepared, typ, scenarios)
+    return await run_benchmark_case(create_values, prepared, typ, scenarios)
 
 
 async def run_benchmarks_multi_schema(
     create_values, create_scheme, typ, scenarios, session
 ):
+    results = []
     for calls, col_num in scenarios:
         prepared = await create_scheme(session, col_num)
-        await run_benchmark_case(
+        result = await run_benchmark_case(
             create_values,
             prepared,
             typ + f"size: {col_num}",
             [(calls, col_num)],
         )
+
+        results.extend(result)
+    return results
 
 
 async def main():
@@ -441,7 +480,7 @@ async def main():
     scenarios = [
         (1, 20000000),
         (4000000, 1),
-        (25000, 10000),
+        (2500, 10000),
     ]
 
     await run_benchmarks_single_schema(
@@ -458,27 +497,27 @@ async def main():
         build_long_string_row, create_string_table, "String ", scenarios, sessions
     )
 
-    scenarios = [
-        (400000, 1),
-    ]
-
-    await run_benchmarks_single_schema(
-        build_udt_row, create_udt_table, "UDT ", scenarios, sessions
-    )
-
-    scenarios = [
-        (1, 500),
-        (1, 1000),
-        (1, 5000),
-    ]
-
-    await run_benchmarks_multi_schema(
-        build_many_ints_row,
-        create_many_ints_table,
-        "Many ints table  ",
-        scenarios,
-        sessions,
-    )
+    # scenarios = [
+    #     (400000, 1),
+    # ]
+    #
+    # await run_benchmarks_single_schema(
+    #     build_udt_row, create_udt_table, "UDT ", scenarios, sessions
+    # )
+    #
+    # scenarios = [
+    #     (1, 500),
+    #     (1, 1000),
+    #     (1, 5000),
+    # ]
+    #
+    # await run_benchmarks_multi_schema(
+    #     build_many_ints_row,
+    #     create_many_ints_table,
+    #     "Many ints table  ",
+    #     scenarios,
+    #     sessions,
+    # )
 
     scenarios = [
         (1, 18),
