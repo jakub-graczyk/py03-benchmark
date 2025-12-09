@@ -28,18 +28,22 @@ def make_empty_class_python():
 class OneFieldClass:
     def __init__(self) -> None:
         self.value = 1
+    
+def make_one_field_class_python():
+    return OneFieldClass()
 
 def read_python(obj):
-    """Read the single field from the OneFieldClass instance."""
-    return obj.value + obj.value + obj.value
+    """Read the single field from the OneFieldClass instance and return it * 3."""
+    val = obj.value
+    return val + val + val
     
 def pass_obj_python(obj):
     """Pass a Python object and do nothing."""
     return None
 
 def read_list_python(lst):
-    """Read first element from a list."""
-    return lst[0]
+    """Read first element from a list and return it * 3."""
+    return lst[0] + lst[0] + lst[0]
 
 
 """Marshalling-heavy benchmarks."""

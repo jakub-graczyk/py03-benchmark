@@ -20,6 +20,7 @@ from ._rust.py03_benchmark import (
     small_args_rust,
     small_ret_args_rust,
     EmptyClass,
+    make_one_field_class_rust,
     read_rust,
     make_empty_class_rust,
     read_rust_list,

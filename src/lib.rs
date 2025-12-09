@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::PyAny;
+use pyo3::types::{PyAny, PyList};
 
 
 /// Pure PyO3 overhead benchmarks: synchronous functions and classes.
@@ -31,6 +31,17 @@ fn make_empty_class_rust() -> PyResult<EmptyClass> {
     Ok(EmptyClass)
 }
 
+#[pyclass]
+pub struct OneFieldClassRust {
+    #[pyo3(get)]
+    value: i32,
+}
+
+#[pyfunction]
+fn make_one_field_class_rust() -> PyResult<OneFieldClassRust> {
+    Ok(OneFieldClassRust { value: 1 })
+}
+
 /// Read 'value' attribute from a Python object three times, sum and return.
 #[pyfunction]
 fn read_rust(obj: Bound<'_, PyAny>) -> PyResult<i32> {
@@ -42,10 +53,11 @@ fn read_rust(obj: Bound<'_, PyAny>) -> PyResult<i32> {
 #[pyfunction]
 fn pass_obj_rust(obj: Bound<'_, PyAny>) -> PyResult<()> { Ok(()) }
 
-/// Accept a list of u32 and return the first element.
+/// Accept a reference to a list and return the first elements * 3.
 #[pyfunction]
-fn read_list_rust(lst: Vec<u32>) -> PyResult<u32> {
-    Ok(lst[0])
+fn read_list_rust(lst: Bound<'_, PyList>) -> PyResult<i32> {
+    let item: i32 = lst.get_item(0)?.extract()?;
+    Ok(item + item + item)
 }
 
 /// Marshalling-heavy benchmarks.
@@ -70,6 +82,7 @@ fn marshall_large_ret(len: usize) -> PyResult<(Vec<i32>, String, Vec<u8>)> {
 fn py03_benchmark(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // pyO3 overhead benchmarks
     m.add_function(wrap_pyfunction!(empty_rust, m)?)?;
+    m.add_function(wrap_pyfunction!(make_one_field_class_rust, m)?)?;
     m.add_function(wrap_pyfunction!(small_args_rust, m)?)?;
     m.add_function(wrap_pyfunction!(small_ret_args_rust, m)?)?;
     m.add_function(wrap_pyfunction!(make_empty_class_rust, m)?)?;
