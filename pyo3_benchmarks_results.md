@@ -1,6 +1,6 @@
 # Python vs Rust via PyO3 Benchmarks Description
 
-This document summarises the results of microbenchmarks comparing Python methods and Rust methods exported via PyO3 and imported by Python of various operations relevant to designing the Python Over Rust Driver.
+This document summarizes the results of microbenchmarks comparing Python methods and Rust methods exported via PyO3 and imported by Python of various operations relevant to designing the Python Over Rust Driver.
 
 Benchmarks were executed in Python for 5 trials, each running for a fixed time window, and throughput is reported in operations per second (ops/s) with mean, standard deviation, min and max.
 
